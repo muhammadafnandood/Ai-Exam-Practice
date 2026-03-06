@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
+import { useAuth } from '../context/AuthContext';
 import { chapters, practiceQuestions } from '../data';
-import { getUser } from '../utils/auth';
 import Header from '../components/Header';
 import Timer from '../components/Timer';
 import QuestionCard from '../components/QuestionCard';
@@ -37,7 +37,7 @@ function shuffleQuestionOptions(question) {
 export default function Exam() {
   const router = useRouter();
   const { chapter, mode } = router.query;
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const { isAuthenticated, loading } = useAuth();
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
@@ -49,20 +49,19 @@ export default function Exam() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   // Auth check
   useEffect(() => {
-    const user = getUser();
-    if (!user) {
+    if (!loading && !isAuthenticated && !isRedirecting) {
+      setIsRedirecting(true);
       router.push('/login');
-      return;
     }
-    setIsCheckingAuth(false);
-  }, [router]);
+  }, [loading, isAuthenticated, router, isRedirecting]);
 
   // Load questions based on mode and chapter
   useEffect(() => {
-    if (!router.isReady || isCheckingAuth) return;
+    if (!router.isReady || loading) return;
 
     const loadQuestions = () => {
       setIsLoading(true);
@@ -114,7 +113,7 @@ export default function Exam() {
     };
 
     loadQuestions();
-  }, [router.isReady, chapter, mode, isCheckingAuth]);
+  }, [router.isReady, chapter, mode, loading]);
 
   // Move to next question
   const moveToNextQuestion = useCallback(() => {
@@ -223,7 +222,7 @@ export default function Exam() {
   const currentQuestion = questions[currentQuestionIndex];
 
   // Loading states
-  if (isCheckingAuth || (isLoading && questions.length === 0)) {
+  if (loading || (isLoading && questions.length === 0)) {
     return <LoadingScreen message="Loading exam..." />;
   }
 

@@ -1,21 +1,23 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { getUser } from '../utils/auth';
+import { useAuth } from '../context/AuthContext';
 import LoadingScreen from '../components/LoadingScreen';
 
 export default function Home() {
   const router = useRouter();
+  const { isAuthenticated, loading } = useAuth();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    const user = getUser();
-    if (user) {
-      // Already logged in, go to dashboard
-      router.push('/dashboard');
-    } else {
-      // Not logged in, go to login page
-      router.push('/login');
+    if (!loading && !isRedirecting) {
+      setIsRedirecting(true);
+      if (isAuthenticated) {
+        router.push('/dashboard');
+      } else {
+        router.push('/login');
+      }
     }
-  }, [router]);
+  }, [isAuthenticated, loading, router, isRedirecting]);
 
   return <LoadingScreen />;
 }

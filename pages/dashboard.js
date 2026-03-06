@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { getUser, logout } from '../utils/auth';
+import { useAuth } from '../context/AuthContext';
+import { signOut } from 'next-auth/react';
 import { chapters } from '../data';
 import Header from '../components/Header';
 import ChapterCard from '../components/ChapterCard';
@@ -8,25 +9,25 @@ import LoadingScreen from '../components/LoadingScreen';
 
 export default function Dashboard() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, loading, isAuthenticated } = useAuth();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    const user = getUser();
-    if (!user) {
+    if (!loading && !isAuthenticated && !isRedirecting) {
+      setIsRedirecting(true);
       router.push('/login');
-    } else {
-      setUser(user);
-      setIsLoading(false);
     }
-  }, [router]);
+  }, [loading, isAuthenticated, router, isRedirecting]);
 
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: '/login' });
   };
 
-  if (isLoading) {
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (!isAuthenticated) {
     return <LoadingScreen />;
   }
 
@@ -40,7 +41,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">
-                Welcome back, {user?.name || user?.email}! 👋
+                Welcome back, {user?.name || user?.email || 'User'}! 👋
               </h1>
               <p className="text-primary-100 text-lg">
                 Ready to continue your learning journey?

@@ -33,4 +33,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
+# logs
+user_credentials_log.txt
+*.log

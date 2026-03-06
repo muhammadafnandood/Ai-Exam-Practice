@@ -4,9 +4,9 @@ import { AuthProvider } from '../context/AuthContext';
 import { SessionProvider } from 'next-auth/react';
 import Head from 'next/head';
 
-function MyApp({ Component, pageProps }) {
+function MyApp({ Component, pageProps: { session, ...pageProps } }) {
   return (
-    <SessionProvider>
+    <SessionProvider session={session}>
       <ThemeProvider>
         <AuthProvider>
           <Head>

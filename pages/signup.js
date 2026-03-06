@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { signup, getUser } from '../utils/auth';
+import { signIn } from 'next-auth/react';
+import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 import LoadingScreen from '../components/LoadingScreen';
 
 export default function Signup() {
   const router = useRouter();
+  const { isAuthenticated, loading } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -18,12 +20,13 @@ export default function Signup() {
 
   // Check if already logged in
   useEffect(() => {
-    if (getUser()) {
-      router.push('/dashboard');
-    } else {
+    if (!loading) {
       setIsChecking(false);
+      if (isAuthenticated) {
+        router.push('/dashboard');
+      }
     }
-  }, [router]);
+  }, [isAuthenticated, loading, router]);
 
   const handleChange = (e) => {
     setFormData({
@@ -49,19 +52,31 @@ export default function Signup() {
 
     setIsLoading(true);
 
-    // Simulate signup delay
-    setTimeout(() => {
-      if (formData.name && formData.email && formData.password) {
-        signup(formData.name, formData.email, formData.password);
-        router.push('/dashboard');
+    try {
+      // Use credentials signup with next-auth
+      const result = await signIn('credentials', {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      });
+      
+      if (result?.error) {
+        setError('Signup failed. Please try again.');
       } else {
-        setError('Please fill in all fields');
-        setIsLoading(false);
+        router.push('/dashboard');
       }
-    }, 1000);
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  if (isChecking) {
+  const handleGoogleSignup = async () => {
+    await signIn('google', { callbackUrl: '/dashboard' });
+  };
+
+  if (loading || isChecking) {
     return <LoadingScreen />;
   }
 
@@ -253,7 +268,10 @@ export default function Signup() {
 
             {/* Social Signup */}
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <button className="flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
+              <button
+                onClick={handleGoogleSignup}
+                className="flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+              >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>

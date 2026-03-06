@@ -1,29 +1,28 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { getUser } from '../utils/auth';
+import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 import ResultCard from '../components/ResultCard';
 import LoadingScreen from '../components/LoadingScreen';
 
 export default function Results() {
   const router = useRouter();
+  const { isAuthenticated, loading } = useAuth();
   const [results, setResults] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   // Auth check
   useEffect(() => {
-    const user = getUser();
-    if (!user) {
+    if (!loading && !isAuthenticated && !isRedirecting) {
+      setIsRedirecting(true);
       router.push('/login');
-      return;
     }
-    setIsCheckingAuth(false);
-  }, [router]);
+  }, [loading, isAuthenticated, router, isRedirecting]);
 
   // Load results from sessionStorage
   useEffect(() => {
-    if (isCheckingAuth) return;
+    if (loading) return;
 
     const storedResults = sessionStorage.getItem('examResults');
     console.log('Stored results:', storedResults);
@@ -43,10 +42,10 @@ export default function Results() {
       console.error('Error parsing results:', error);
       router.push('/dashboard');
     }
-  }, [router, isCheckingAuth]);
+  }, [router, loading]);
 
   // Loading state
-  if (isCheckingAuth || isLoading) {
+  if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Header />

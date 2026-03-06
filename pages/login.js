@@ -7,16 +7,20 @@ import LoadingScreen from '../components/LoadingScreen';
 
 export default function Login() {
   const router = useRouter();
-  const { login, isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
 
   // Check if already authenticated
   useEffect(() => {
-    if (isAuthenticated && !loading) {
-      router.push('/dashboard');
+    if (!loading) {
+      setIsChecking(false);
+      if (isAuthenticated) {
+        router.push('/dashboard');
+      }
     }
   }, [isAuthenticated, loading, router]);
 
@@ -26,7 +30,12 @@ export default function Login() {
     setIsLoggingIn(true);
 
     try {
-      const result = await login(email, password);
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
+      
       if (result?.error) {
         setError('Invalid email or password');
       } else {
@@ -50,7 +59,7 @@ export default function Login() {
     }
   };
 
-  if (loading) {
+  if (loading || isChecking) {
     return <LoadingScreen />;
   }
 
