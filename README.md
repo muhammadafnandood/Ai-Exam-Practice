@@ -7,7 +7,7 @@ An AI-powered exam preparation platform built with Next.js to help students prac
 - **Interactive Exam Interface**: Real-time exam practice with timer
 - **Dashboard**: Track your progress and performance
 - **Results Analysis**: Detailed feedback on your exams
-- **User Authentication**: Secure login and signup system
+- **User Authentication**: Secure login with Email/Password and Google OAuth
 - **Responsive Design**: Works on all devices with Tailwind CSS
 
 ## 🛠️ Tech Stack
@@ -36,11 +36,32 @@ cd Ai-Exam-Practice
 # Install dependencies
 npm install
 
+# Create .env.local file and add Google OAuth credentials
+cp .env.example .env.local
+
 # Run development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### 🔐 Setting Up Google OAuth (Required for Google Login)
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing
+3. Enable **Google+ API**
+4. Go to **Credentials** → **Create Credentials** → **OAuth 2.0 Client ID**
+5. Set **Authorized redirect URI**:
+   - Local: `http://localhost:3000/api/auth/callback/google`
+   - Production (Vercel): `https://your-app.vercel.app/api/auth/callback/google`
+6. Copy **Client ID** and **Client Secret** to `.env.local`
+
+```env
+GOOGLE_CLIENT_ID=your-client-id-here
+GOOGLE_CLIENT_SECRET=your-client-secret-here
+NEXTAUTH_SECRET=generate-with-openssl-rand-base64-32
+NEXTAUTH_URL=http://localhost:3000
+```
 
 ## 📜 Available Scripts
 
@@ -62,7 +83,12 @@ npm start
 1. Push your code to GitHub
 2. Go to [Vercel](https://vercel.com)
 3. Import your GitHub repository
-4. Vercel will auto-detect Next.js and deploy
+4. **Add Environment Variables** in Vercel dashboard:
+   - `GOOGLE_CLIENT_ID`
+   - `GOOGLE_CLIENT_SECRET`
+   - `NEXTAUTH_SECRET` (generate with: `openssl rand -base64 32`)
+   - `NEXTAUTH_URL` (your Vercel app URL)
+5. Vercel will auto-detect Next.js and deploy
 
 **Demo URL**: [Add your Vercel deployment URL here]
 

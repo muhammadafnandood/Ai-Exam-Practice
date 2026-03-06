@@ -1,44 +1,56 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { login, getUser } from '../utils/auth';
+import { signIn } from 'next-auth/react';
+import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
 import LoadingScreen from '../components/LoadingScreen';
 
 export default function Login() {
   const router = useRouter();
+  const { login, isAuthenticated, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Check if already logged in
+  // Check if already authenticated
   useEffect(() => {
-    if (getUser()) {
+    if (isAuthenticated && !loading) {
       router.push('/dashboard');
-    } else {
-      setIsChecking(false);
     }
-  }, [router]);
+  }, [isAuthenticated, loading, router]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
+    setIsLoggingIn(true);
 
-    // Simulate login delay
-    setTimeout(() => {
-      if (email && password) {
-        login(email, password);
-        router.push('/dashboard');
+    try {
+      const result = await login(email, password);
+      if (result?.error) {
+        setError('Invalid email or password');
       } else {
-        setError('Please enter valid credentials');
-        setIsLoading(false);
+        router.push('/dashboard');
       }
-    }, 1000);
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
-  if (isChecking) {
+  const handleGoogleLogin = async () => {
+    setIsLoggingIn(true);
+    try {
+      await signIn('google', { callbackUrl: '/dashboard' });
+    } catch (err) {
+      setError('Google login failed. Please try again.');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  if (loading) {
     return <LoadingScreen />;
   }
 
@@ -137,14 +149,14 @@ export default function Login() {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoggingIn}
                 className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-all transform hover:scale-105 ${
-                  isLoading
+                  isLoggingIn
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-gradient-to-r from-primary-500 to-primary-700 hover:from-primary-600 hover:to-primary-800 shadow-lg hover:shadow-xl'
                 }`}
               >
-                {isLoading ? (
+                {isLoggingIn ? (
                   <span className="flex items-center justify-center">
                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -170,7 +182,11 @@ export default function Login() {
 
             {/* Social Login */}
             <div className="mt-6 grid grid-cols-2 gap-3">
-              <button className="flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
+              <button
+                onClick={handleGoogleLogin}
+                disabled={isLoggingIn}
+                className="flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
